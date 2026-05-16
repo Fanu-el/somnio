@@ -1,28 +1,65 @@
+import { useEffect } from 'react';
+import { useColorScheme as useNativeColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { Provider } from 'react-redux';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useColorScheme } from 'nativewind';
+import 'react-native-reanimated';
+import '../global.css';
+
+import { store, fetchLocalLogs, useAppDispatch, useAppSelector } from '../src/store';
+import { loadThemeMode } from '../src/store/settingsSlice';
 import {
-  DarkTheme,
-  DefaultTheme,
   ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import "../global.css";
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+} from '@react-navigation/native';
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
+export const unstable_settings = { anchor: '(tabs)' };
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+function AppInitializer({ children }: { children: React.ReactNode }) {
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    dispatch(loadThemeMode());
+    dispatch(fetchLocalLogs());
+  }, [dispatch]);
+  return <>{children}</>;
+}
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+function ThemedApp() {
+  const systemScheme = useNativeColorScheme();
+  const themeMode = useAppSelector((s: any) => s.settings.themeMode);
+  const resolved = themeMode === 'system' ? systemScheme : themeMode;
+  const isDark = resolved === 'dark';
+
+  const { setColorScheme } = useColorScheme();
+  
+  useEffect(() => {
+    setColorScheme(resolved === 'dark' ? 'dark' : 'light');
+  }, [resolved, setColorScheme]);
+
+  const navTheme = isDark ? NavigationDarkTheme : NavigationDefaultTheme;
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="auto" />
+    <ThemeProvider value={navTheme}>
+      <AppInitializer>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Log Sleep' }} />
+        </Stack>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </AppInitializer>
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <ThemedApp />
+      </SafeAreaProvider>
+    </Provider>
   );
 }

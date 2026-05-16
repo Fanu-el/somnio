@@ -8,7 +8,7 @@ export function IconSymbol({
   style,
   weight = 'regular',
 }: {
-  name: keyof typeof SymbolWeight;
+  name: string;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<ViewStyle>;
