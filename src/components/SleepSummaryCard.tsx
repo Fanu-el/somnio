@@ -3,30 +3,24 @@ import { StyleSheet, View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import { SleepRecord } from '../types';
+import { useTheme } from '../hooks/useTheme';
+import { Moon } from 'lucide-react-native';
+
+import { dateUtils } from '../utils/date';
 
 interface Props {
   log: SleepRecord | null;
-  isDark: boolean;
 }
 
 const qualityEmoji = ['', '😫', '😕', '😐', '🙂', '🤩'];
 const qualityLabel = ['', 'Poor', 'Fair', 'Okay', 'Great', 'Excellent'];
 
-const formatDuration = (sleepIso: string, wakeIso: string) => {
-  const diff = new Date(wakeIso).getTime() - new Date(sleepIso).getTime();
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return `${h}h ${m}m`;
-};
-
-const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-const GRADIENT_DARK: [string, string, string] = ['#2E1B69', '#5B2D8E', '#7B3FAC'];
-const GRADIENT_LIGHT: [string, string, string] = ['#5B4FE8', '#7C3AED', '#C026D3'];
-
-export const SleepSummaryCard = ({ log, isDark }: Props) => {
-  const gradient = isDark ? GRADIENT_DARK : GRADIENT_LIGHT;
+export const SleepSummaryCard = ({ log }: Props) => {
+  const { isDark, colors } = useTheme();
+  
+  const gradient: [string, string, string] = isDark 
+    ? ['#2E1B69', '#5B2D8E', '#7B3FAC'] 
+    : [colors.primary, colors.secondary, colors.tertiary];
 
   return (
     <MotiView
@@ -39,7 +33,7 @@ export const SleepSummaryCard = ({ log, isDark }: Props) => {
         {log ? (
           <>
             <Text style={styles.chip}>LAST NIGHT</Text>
-            <Text style={styles.duration}>{formatDuration(log.sleepTime, log.wakeTime)}</Text>
+            <Text style={styles.duration}>{dateUtils.formatDuration(log.sleepTime, log.wakeTime)}</Text>
             <View style={styles.row}>
               <Text style={styles.emoji}>{log.emoji || qualityEmoji[log.quality]}</Text>
               <Text style={styles.qualityText}>{qualityLabel[log.quality]} sleep</Text>
@@ -47,18 +41,20 @@ export const SleepSummaryCard = ({ log, isDark }: Props) => {
             <View style={[styles.row, styles.timesRow]}>
               <View style={styles.timeBlock}>
                 <Text style={styles.timeLabel}>FELL ASLEEP</Text>
-                <Text style={styles.timeValue}>{fmtTime(log.sleepTime)}</Text>
+                <Text style={styles.timeValue}>{dateUtils.fmtTime(log.sleepTime)}</Text>
               </View>
               <Text style={styles.arrow}>→</Text>
               <View style={styles.timeBlock}>
                 <Text style={styles.timeLabel}>WOKE UP</Text>
-                <Text style={styles.timeValue}>{fmtTime(log.wakeTime)}</Text>
+                <Text style={styles.timeValue}>{dateUtils.fmtTime(log.wakeTime)}</Text>
               </View>
             </View>
           </>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🌙</Text>
+            <View style={{ marginBottom: 12 }}>
+              <Moon size={48} color="rgba(255,255,255,0.5)" />
+            </View>
             <Text style={styles.emptyText}>No sleep logged yet</Text>
             <Text style={styles.emptyHint}>Tap + to record your first night</Text>
           </View>
