@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
+import { Cloud, Trash2, MessageSquare, Clock } from 'lucide-react-native';
 import { SleepRecord } from '../types';
+import { useTheme } from '../hooks/useTheme';
+import { dateUtils } from '../utils/date';
 
 interface LogCardProps {
   log: SleepRecord;
@@ -13,44 +16,36 @@ interface LogCardProps {
 const qualityColors: Record<number, string> = {
   1: '#EF4444', 2: '#F97316', 3: '#EAB308', 4: '#22C55E', 5: '#8B5CF6',
 };
+
 const qualityEmoji = ['', '😫', '😕', '😐', '🙂', '🤩'];
 
-const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-const formatDuration = (sleepIso: string, wakeIso: string) => {
-  const diff = new Date(wakeIso).getTime() - new Date(sleepIso).getTime();
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return `${h}h ${m}m`;
-};
-
 export const LogCard = ({ log, onDelete, index = 0, compact = false }: LogCardProps) => {
-  const qColor = qualityColors[log.quality] ?? '#8B5CF6';
+  const { colors } = useTheme();
+  const qColor = qualityColors[log.quality] ?? colors.primary;
 
   return (
     <MotiView
-      from={{ opacity: 0, translateX: -20 }}
-      animate={{ opacity: 1, translateX: 0 }}
-      transition={{ type: 'timing', duration: 350, delay: index * 70 }}
-      style={[styles.card, { borderLeftColor: qColor }]}
+      from={{ opacity: 0, translateY: 20 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: 'timing', duration: 400, delay: index * 80 }}
+      style={[styles.card, { backgroundColor: colors.surface, borderLeftColor: qColor }]}
     >
-      {/* Quality accent bar */}
-      <View style={[styles.qualityBar, { backgroundColor: qColor }]} />
-
       <View style={styles.body}>
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={styles.dateText}>
+          <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
             {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
           </Text>
           <View style={styles.rightHeader}>
             {log.synced && (
-              <Text style={[styles.badge, { color: '#9D8FFF' }]}>☁ synced</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Cloud size={12} color={colors.primary} />
+                <Text style={[styles.badge, { color: colors.primary }]}>Synced</Text>
+              </View>
             )}
             {!compact && (
-              <Pressable onPress={() => onDelete(log.id)} hitSlop={8} style={styles.deleteBtn}>
-                <Text style={styles.deleteText}>✕</Text>
+              <Pressable onPress={() => onDelete(log.id)} hitSlop={12} style={styles.deleteBtn}>
+                <Trash2 size={16} color={colors.error} opacity={0.7} />
               </Pressable>
             )}
           </View>
@@ -58,22 +53,30 @@ export const LogCard = ({ log, onDelete, index = 0, compact = false }: LogCardPr
 
         {/* Duration + emoji */}
         <View style={styles.mainRow}>
-          <Text style={styles.duration}>
-            {formatDuration(log.sleepTime, log.wakeTime)}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={[styles.duration, { color: colors.onSurface }]}>
+              {dateUtils.formatDuration(log.sleepTime, log.wakeTime)}
+            </Text>
+          </View>
           <Text style={styles.qualityEmoji}>{log.emoji || qualityEmoji[log.quality]}</Text>
         </View>
 
         {/* Times */}
-        <Text style={styles.timesText}>
-          {fmtTime(log.sleepTime)} → {fmtTime(log.wakeTime)}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Clock size={12} color={colors.onSurfaceVariant} />
+          <Text style={[styles.timesText, { color: colors.onSurfaceVariant }]}>
+            {dateUtils.fmtTime(log.sleepTime)} — {dateUtils.fmtTime(log.wakeTime)}
+          </Text>
+        </View>
 
         {/* Dream snippet */}
         {!compact && log.dreams ? (
-          <Text numberOfLines={2} style={styles.dreams}>
-            💭 {log.dreams}
-          </Text>
+          <View style={[styles.dreamsContainer, { backgroundColor: colors.surfaceVariant + '40', borderLeftColor: colors.primary }]}>
+            <MessageSquare size={12} color={colors.primary} style={{ marginTop: 2 }} />
+            <Text numberOfLines={2} style={[styles.dreams, { color: colors.onSurface }]}>
+              {log.dreams}
+            </Text>
+          </View>
         ) : null}
       </View>
     </MotiView>
@@ -82,31 +85,34 @@ export const LogCard = ({ log, onDelete, index = 0, compact = false }: LogCardPr
 
 const styles = StyleSheet.create({
   card: {
-    marginVertical: 6,
+    marginVertical: 8,
     marginHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     borderLeftWidth: 4,
-    flexDirection: 'row',
-    overflow: 'hidden',
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    // Surface color handled at runtime – default to white-ish
-    backgroundColor: '#13102A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    overflow: 'hidden',
   },
-  qualityBar: { width: 4 },
-  body: { flex: 1, padding: 14 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  dateText: { fontSize: 12, color: '#C4BCFF' },
-  rightHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  badge: { fontSize: 11, opacity: 0.8 },
+  body: { padding: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  dateText: { fontSize: 13, fontWeight: '600' },
+  rightHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  badge: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
   deleteBtn: { padding: 4 },
-  deleteText: { color: '#FCA5A5', fontSize: 15 },
-  mainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  duration: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: '#E8E5FF' },
-  qualityEmoji: { fontSize: 22 },
-  timesText: { fontSize: 12, color: '#C4BCFF' },
-  dreams: { marginTop: 8, fontStyle: 'italic', opacity: 0.85, fontSize: 13, color: '#C084FC' },
+  mainRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  duration: { fontSize: 24, fontWeight: '800', letterSpacing: -0.8 },
+  qualityEmoji: { fontSize: 24 },
+  timesText: { fontSize: 13, fontWeight: '500' },
+  dreamsContainer: { 
+    marginTop: 12, 
+    padding: 10, 
+    borderRadius: 10, 
+    flexDirection: 'row', 
+    gap: 8,
+    borderLeftWidth: 3,
+  },
+  dreams: { flex: 1, fontSize: 13, lineHeight: 18, opacity: 0.8 },
 });

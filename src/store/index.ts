@@ -1,9 +1,11 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { sleepApi } from '../api/sleepApi';
+import { authApi } from '../api/authApi';
 import { SleepRecord } from '../types';
 import { getLogs, insertLog, deleteLogDb, markLogsSyncedDb } from './db';
 import settingsReducer from './settingsSlice';
+import authReducer from './authSlice';
 
 // ── Sleep slice ─────────────────────────────────────────────────
 interface SleepState {
@@ -70,10 +72,12 @@ export const store = configureStore({
   reducer: {
     sleep: sleepSlice.reducer,
     settings: settingsReducer,
+    auth: authReducer,
     [sleepApi.reducerPath]: sleepApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(sleepApi.middleware),
+    getDefaultMiddleware().concat(sleepApi.middleware, authApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

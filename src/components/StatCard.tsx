@@ -1,26 +1,33 @@
 import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MotiView } from 'moti';
+import { LucideIcon } from 'lucide-react-native';
+import { useTheme } from '../hooks/useTheme';
 
 interface StatCardProps {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   value: string;
   delay?: number;
   accent?: string;
 }
 
-export const StatCard = ({ icon, label, value, delay = 0, accent = '#9D8FFF' }: StatCardProps) => {
+export const StatCard = ({ icon: Icon, label, value, delay = 0, accent }: StatCardProps) => {
+  const { colors } = useTheme();
+  const activeAccent = accent || colors.primary;
+
   return (
     <MotiView
       from={{ opacity: 0, scale: 0.85, translateY: 12 }}
       animate={{ opacity: 1, scale: 1, translateY: 0 }}
       transition={{ type: 'spring', delay, damping: 18, stiffness: 120 }}
-      style={styles.card}
+      style={[styles.card, { backgroundColor: colors.surface }]}
     >
-      <Text style={styles.icon}>{icon}</Text>
-      <Text style={[styles.value, { color: accent }]}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <View style={[styles.iconWrapper, { backgroundColor: activeAccent + '15' }]}>
+        <Icon size={22} color={activeAccent} />
+      </View>
+      <Text style={[styles.value, { color: activeAccent }]}>{value}</Text>
+      <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>{label}</Text>
     </MotiView>
   );
 };
@@ -28,14 +35,25 @@ export const StatCard = ({ icon, label, value, delay = 0, accent = '#9D8FFF' }: 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    borderRadius: 20,
-    paddingVertical: 16,
+    borderRadius: 24,
+    paddingVertical: 20,
     paddingHorizontal: 12,
     alignItems: 'center',
-    marginHorizontal: 4,
-    backgroundColor: '#1E1B40',
+    marginHorizontal: 5,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
-  icon: { fontSize: 26, marginBottom: 6 },
-  value: { fontWeight: '800', fontSize: 20 },
-  label: { marginTop: 2, textAlign: 'center', fontSize: 11, color: '#C4BCFF' },
+  iconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  value: { fontWeight: '800', fontSize: 20, letterSpacing: -0.5 },
+  label: { marginTop: 4, textAlign: 'center', fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
 });
