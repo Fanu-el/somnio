@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
 import { SleepRecord } from '../types';
 import { useTheme } from '../hooks/useTheme';
 import { Moon } from 'lucide-react-native';
@@ -15,6 +14,8 @@ interface Props {
 const qualityEmoji = ['', '😫', '😕', '😐', '🙂', '🤩'];
 const qualityLabel = ['', 'Poor', 'Fair', 'Okay', 'Great', 'Excellent'];
 
+import { Card as PaperCard, Text as PaperText } from 'react-native-paper';
+
 export const SleepSummaryCard = ({ log }: Props) => {
   const { isDark, colors } = useTheme();
   
@@ -23,44 +24,41 @@ export const SleepSummaryCard = ({ log }: Props) => {
     : [colors.primary, colors.secondary, colors.tertiary];
 
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 24 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: 'timing', duration: 600, delay: 200 }}
-      style={styles.wrapper}
-    >
-      <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
-        {log ? (
-          <>
-            <Text style={styles.chip}>LAST NIGHT</Text>
-            <Text style={styles.duration}>{dateUtils.formatDuration(log.sleepTime, log.wakeTime)}</Text>
-            <View style={styles.row}>
-              <Text style={styles.emoji}>{log.emoji || qualityEmoji[log.quality]}</Text>
-              <Text style={styles.qualityText}>{qualityLabel[log.quality]} sleep</Text>
-            </View>
-            <View style={[styles.row, styles.timesRow]}>
-              <View style={styles.timeBlock}>
-                <Text style={styles.timeLabel}>FELL ASLEEP</Text>
-                <Text style={styles.timeValue}>{dateUtils.fmtTime(log.sleepTime)}</Text>
+    <View>
+      <PaperCard style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 24, overflow: 'hidden' }} mode="elevated" elevation={3}>
+        <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
+          {log ? (
+            <>
+              <PaperText variant="labelSmall" style={styles.chip}>LAST NIGHT</PaperText>
+              <PaperText variant="displayLarge" style={styles.duration}>{dateUtils.formatDuration(log.sleepTime, log.wakeTime)}</PaperText>
+              <View style={styles.row}>
+                <PaperText style={styles.emoji}>{log.emoji || qualityEmoji[log.quality]}</PaperText>
+                <PaperText variant="titleMedium" style={styles.qualityText}>{qualityLabel[log.quality]} sleep</PaperText>
               </View>
-              <Text style={styles.arrow}>→</Text>
-              <View style={styles.timeBlock}>
-                <Text style={styles.timeLabel}>WOKE UP</Text>
-                <Text style={styles.timeValue}>{dateUtils.fmtTime(log.wakeTime)}</Text>
+              <View style={[styles.row, styles.timesRow]}>
+                <View style={styles.timeBlock}>
+                  <PaperText variant="labelSmall" style={styles.timeLabel}>FELL ASLEEP</PaperText>
+                  <PaperText variant="titleMedium" style={styles.timeValue}>{dateUtils.fmtTime(log.sleepTime)}</PaperText>
+                </View>
+                <PaperText style={styles.arrow}>→</PaperText>
+                <View style={styles.timeBlock}>
+                  <PaperText variant="labelSmall" style={styles.timeLabel}>WOKE UP</PaperText>
+                  <PaperText variant="titleMedium" style={styles.timeValue}>{dateUtils.fmtTime(log.wakeTime)}</PaperText>
+                </View>
               </View>
+            </>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={{ marginBottom: 12 }}>
+                <Moon size={48} color="rgba(255,255,255,0.5)" />
+              </View>
+              <PaperText variant="titleLarge" style={styles.emptyText}>No sleep logged yet</PaperText>
+              <PaperText variant="bodyMedium" style={styles.emptyHint}>Tap + to record your first night</PaperText>
             </View>
-          </>
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={{ marginBottom: 12 }}>
-              <Moon size={48} color="rgba(255,255,255,0.5)" />
-            </View>
-            <Text style={styles.emptyText}>No sleep logged yet</Text>
-            <Text style={styles.emptyHint}>Tap + to record your first night</Text>
-          </View>
-        )}
-      </LinearGradient>
-    </MotiView>
+          )}
+        </LinearGradient>
+      </PaperCard>
+    </View>
   );
 };
 

@@ -1,29 +1,24 @@
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useColorScheme } from 'nativewind';
+import { useTheme } from '../../src/hooks/useTheme';
 
 export default function TabLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
-  const surfaceColor = isDark ? '#13102A' : '#FFFFFF';
-  const onSurfaceColor = isDark ? '#E8E5FF' : '#1A1635';
-  const primaryColor = isDark ? '#9D8FFF' : '#5B4FE8';
-  const onSurfaceVariantColor = isDark ? '#C4BCFF' : '#4C4578';
+  const { colors, isDark } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: surfaceColor },
-        headerTintColor: onSurfaceColor,
+        headerShown: false,
+        headerStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.onSurface,
         headerShadowVisible: false,
         tabBarStyle: {
-          backgroundColor: surfaceColor,
+          backgroundColor: colors.surface,
           borderTopWidth: 0,
           elevation: 12,
         },
-        tabBarActiveTintColor: primaryColor,
-        tabBarInactiveTintColor: onSurfaceVariantColor,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.onSurfaceVariant,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >

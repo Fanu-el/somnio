@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView } from 'react-native';
+import { View, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useResetPasswordMutation } from '../src/api/authApi';
@@ -8,7 +8,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTheme } from '../src/hooks/useTheme';
 import { notify } from '../src/utils/notifications';
-import { Loader } from '../src/components/Loader';
+import { Text as PaperText, TextInput as PaperInput, Button as PaperButton, Card as PaperCard } from 'react-native-paper';
+import { ArrowLeft } from 'lucide-react-native';
 
 const schema = z.object({
   email: z.string().email('Valid email required'),
@@ -16,6 +17,12 @@ const schema = z.object({
   newPassword: z.string().min(8, 'Min. 8 characters'),
 });
 type FormData = z.infer<typeof schema>;
+
+const FIELD_CONFIG = [
+  { name: 'email' as const, label: 'Email', keyboard: 'email-address' as const, secure: false, placeholder: 'you@example.com' },
+  { name: 'code' as const, label: 'Reset Code', keyboard: 'number-pad' as const, secure: false, placeholder: '000000' },
+  { name: 'newPassword' as const, label: 'New Password', keyboard: 'default' as const, secure: true, placeholder: 'Min. 8 characters' },
+];
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -25,8 +32,6 @@ export default function ResetPasswordScreen() {
     resolver: zodResolver(schema),
     defaultValues: { email: '', code: '', newPassword: '' },
   });
-
-  const inputStyle = { borderWidth: 1.5, borderColor: colors.outline, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, color: colors.onSurface, backgroundColor: colors.background, fontSize: 15, marginBottom: 4 };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -41,36 +46,66 @@ export default function ResetPasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
-        <Pressable onPress={() => router.back()} style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>← Back</Text>
-        </Pressable>
+        <PaperButton
+          mode="text"
+          icon={() => <ArrowLeft size={18} color={colors.primary} />}
+          onPress={() => router.back()}
+          style={{ alignSelf: 'flex-start', marginBottom: 24 }}
+          textColor={colors.primary}
+        >
+          Back
+        </PaperButton>
+
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
-          <Text style={{ fontSize: 44 }}>🔐</Text>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.onSurface, marginTop: 10 }}>New Password</Text>
+          <PaperText variant="displaySmall">🔐</PaperText>
+          <PaperText variant="headlineSmall" style={{ fontWeight: '800', color: colors.onSurface, marginTop: 10 }}>New Password</PaperText>
         </View>
-        <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 24, elevation: 4 }}>
-          {(['email', 'code', 'newPassword'] as const).map((field) => (
-            <View key={field}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.onSurfaceVariant, letterSpacing: 0.5, marginBottom: 6, marginTop: field === 'email' ? 0 : 12 }}>
-                {field === 'email' ? 'EMAIL' : field === 'code' ? 'RESET CODE' : 'NEW PASSWORD'}
-              </Text>
-              <Controller control={control} name={field} render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput style={[inputStyle, errors[field] && { borderColor: colors.error }]}
-                  onBlur={onBlur} onChangeText={onChange} value={value}
-                  keyboardType={field === 'code' ? 'number-pad' : field === 'email' ? 'email-address' : 'default'}
-                  autoCapitalize="none" secureTextEntry={field === 'newPassword'}
-                  placeholder={field === 'code' ? '000000' : ''} placeholderTextColor={colors.outline}
+
+        <PaperCard style={{ backgroundColor: colors.surface }} mode="elevated" elevation={2}>
+          <PaperCard.Content style={{ gap: 8 }}>
+            {FIELD_CONFIG.map(field => (
+              <View key={field.name}>
+                <Controller
+                  control={control}
+                  name={field.name}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <PaperInput
+                      mode="outlined"
+                      label={field.label}
+                      style={{ backgroundColor: colors.surface, marginBottom: 4 }}
+                      outlineColor={colors.outline}
+                      activeOutlineColor={colors.primary}
+                      error={!!errors[field.name]}
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      keyboardType={field.keyboard}
+                      autoCapitalize="none"
+                      secureTextEntry={field.secure}
+                      placeholder={field.placeholder}
+                    />
+                  )}
                 />
-              )} />
-              {errors[field] && <Text style={{ color: colors.error, fontSize: 12 }}>{errors[field]?.message}</Text>}
-            </View>
-          ))}
-          <Pressable onPress={handleSubmit(onSubmit)} disabled={isLoading}
-            style={{ backgroundColor: isLoading ? colors.outline : colors.primary, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 20 }}>
-            <Loader visible={isLoading} inline size="small" color="#fff" />
-            {!isLoading && <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Reset Password</Text>}
-          </Pressable>
-        </View>
+                {errors[field.name] && (
+                  <PaperText variant="labelSmall" style={{ color: colors.error, marginBottom: 4, marginLeft: 4 }}>
+                    {errors[field.name]?.message}
+                  </PaperText>
+                )}
+              </View>
+            ))}
+
+            <PaperButton
+              mode="contained"
+              onPress={handleSubmit(onSubmit)}
+              loading={isLoading}
+              disabled={isLoading}
+              style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 4, marginTop: 12 }}
+              labelStyle={{ fontSize: 16, fontWeight: '800' }}
+            >
+              Reset Password
+            </PaperButton>
+          </PaperCard.Content>
+        </PaperCard>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

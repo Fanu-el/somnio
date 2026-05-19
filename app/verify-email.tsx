@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView } from 'react-native';
+import { View, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useVerifyEmailMutation, useResendVerificationMutation } from '../src/api/authApi';
 import { useTheme } from '../src/hooks/useTheme';
 import { notify } from '../src/utils/notifications';
-import { Loader } from '../src/components/Loader';
+import { Text as PaperText, TextInput as PaperInput, Button as PaperButton, Card as PaperCard } from 'react-native-paper';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
@@ -39,39 +39,51 @@ export default function VerifyEmailScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
         <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <Text style={{ fontSize: 48 }}>📬</Text>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.onSurface, marginTop: 12 }}>Verify your email</Text>
-          <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 8, textAlign: 'center' }}>
-            We sent a 6-digit code to{'\n'}<Text style={{ color: colors.primary, fontWeight: '700' }}>{email}</Text>
-          </Text>
+          <PaperText variant="displaySmall">📬</PaperText>
+          <PaperText variant="headlineSmall" style={{ fontWeight: '800', color: colors.onSurface, marginTop: 12 }}>Verify your email</PaperText>
+          <PaperText variant="bodyMedium" style={{ color: colors.onSurfaceVariant, marginTop: 8, textAlign: 'center' }}>
+            We sent a 6-digit code to{'\n'}
+            <PaperText style={{ color: colors.primary, fontWeight: '700' }}>{email}</PaperText>
+          </PaperText>
         </View>
 
-        <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 24, elevation: 4 }}>
-          <TextInput
-            style={{
-              borderWidth: 1.5, borderColor: colors.outline, borderRadius: 12,
-              paddingHorizontal: 14, paddingVertical: 13, color: colors.onSurface,
-              backgroundColor: colors.background, fontSize: 24, textAlign: 'center', letterSpacing: 8, fontWeight: '700',
-            }}
-            value={code} onChangeText={setCode}
-            keyboardType="number-pad" maxLength={6}
-            placeholder="000000" placeholderTextColor={colors.outline}
-          />
+        <PaperCard style={{ backgroundColor: colors.surface }} mode="elevated" elevation={2}>
+          <PaperCard.Content style={{ gap: 12 }}>
+            <PaperInput
+              mode="outlined"
+              label="6-digit code"
+              style={{ backgroundColor: colors.surface, textAlign: 'center', fontSize: 24, letterSpacing: 8, fontWeight: '700' }}
+              outlineColor={colors.outline}
+              activeOutlineColor={colors.primary}
+              value={code}
+              onChangeText={setCode}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="000000"
+            />
 
-          <Pressable
-            onPress={handleVerify} disabled={isLoading}
-            style={{ backgroundColor: isLoading ? colors.outline : colors.primary, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 16 }}
-          >
-            <Loader visible={isLoading} inline size="small" color="#fff" />
-            {!isLoading && <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Verify Email</Text>}
-          </Pressable>
+            <PaperButton
+              mode="contained"
+              onPress={handleVerify}
+              loading={isLoading}
+              disabled={isLoading}
+              style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 4 }}
+              labelStyle={{ fontSize: 16, fontWeight: '800' }}
+            >
+              Verify Email
+            </PaperButton>
 
-          <Pressable onPress={handleResend} disabled={isResending} style={{ marginTop: 16, alignItems: 'center' }}>
-            <Text style={{ color: isResending ? colors.outline : colors.primary, fontSize: 14, fontWeight: '600' }}>
-              {isResending ? 'Sending…' : 'Resend code'}
-            </Text>
-          </Pressable>
-        </View>
+            <PaperButton
+              mode="text"
+              onPress={handleResend}
+              loading={isResending}
+              disabled={isResending}
+              textColor={colors.primary}
+            >
+              Resend code
+            </PaperButton>
+          </PaperCard.Content>
+        </PaperCard>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

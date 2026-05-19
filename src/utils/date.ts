@@ -19,8 +19,7 @@ export const dateUtils = {
     return `${h}h ${m}m`;
   },
 
-  fmtTime: (iso: string) =>
-    new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  fmtTime: (iso: string) => dayjs(iso).format('HH:mm'),
 
   getGreeting: () => {
     const h = dayjs().hour();
@@ -39,20 +38,20 @@ export const dateUtils = {
     });
   },
 
-  createLogDates: (sleepTimeStr: string, wakeTimeStr: string, tz: string) => {
-    const now = dayjs().tz(tz);
+  createLogDates: (sleepTimeStr: string, wakeTimeStr: string, tz: string, baseDate?: string) => {
+    const base = baseDate ? dayjs(baseDate).tz(tz) : dayjs().tz(tz);
     const [sH, sM] = sleepTimeStr.split(':').map(Number);
-    let sleepDate = now.hour(sH).minute(sM).second(0).millisecond(0);
+    let sleepDate = base.hour(sH).minute(sM).second(0).millisecond(0);
     
     const [wH, wM] = wakeTimeStr.split(':').map(Number);
-    let wakeDate = now.hour(wH).minute(wM).second(0).millisecond(0);
+    let wakeDate = base.hour(wH).minute(wM).second(0).millisecond(0);
     
     if (sleepDate.isAfter(wakeDate)) {
       sleepDate = sleepDate.subtract(1, 'day');
     }
     
     return {
-      date: now.toISOString(),
+      date: base.toISOString(),
       sleepTime: sleepDate.toISOString(),
       wakeTime: wakeDate.toISOString(),
     };
@@ -60,12 +59,18 @@ export const dateUtils = {
 
   calculateStreak: (logs: any[]) => {
     if (!logs.length) return 0;
-    const dates = logs.map(l => new Date(l.date).toDateString());
+    // Use each log's own timezone for the date string so cross-midnight logs count correctly
+    const dates = new Set(
+      logs.map(l => {
+        const tz = l.timezone || 'UTC';
+        return dayjs(l.date).tz(tz).format('YYYY-MM-DD');
+      })
+    );
     let streak = 0;
-    const d = new Date();
-    while (dates.includes(d.toDateString())) {
+    let d = dayjs();
+    while (dates.has(d.format('YYYY-MM-DD'))) {
       streak++;
-      d.setDate(d.getDate() - 1);
+      d = d.subtract(1, 'day');
     }
     return streak;
   }

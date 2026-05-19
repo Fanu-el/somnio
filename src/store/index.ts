@@ -3,7 +3,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { sleepApi } from '../api/sleepApi';
 import { authApi } from '../api/authApi';
 import { SleepRecord } from '../types';
-import { getLogs, insertLog, deleteLogDb, markLogsSyncedDb } from './db';
+import { getLogs, insertLog, deleteLogDb, updateLogDb, markLogsSyncedDb, upsertLogs } from './db';
 import settingsReducer from './settingsSlice';
 import authReducer from './authSlice';
 
@@ -16,6 +16,15 @@ interface SleepState {
 const initialState: SleepState = { logs: [], isLoading: true };
 
 export const fetchLocalLogs = createAsyncThunk('sleep/fetchLocalLogs', async () => {
+  return getLogs();
+});
+
+export const syncFromCloud = createAsyncThunk('sleep/syncFromCloud', async (_, { dispatch }) => {
+  const result = await dispatch(sleepApi.endpoints.getLogs.initiate(undefined, { forceRefetch: true }));
+  if (result.data?.data?.logs) {
+    await upsertLogs(result.data.data.logs);
+    return getLogs();
+  }
   return getLogs();
 });
 
@@ -32,8 +41,23 @@ export const addLocalLog = createAsyncThunk(
   }
 );
 
-export const removeLocalLog = createAsyncThunk('sleep/removeLocalLog', async (id: string) => {
+export const updateLocalLog = createAsyncThunk(
+  'sleep/updateLocalLog',
+  async (log: SleepRecord) => {
+    await updateLogDb(log);
+    return log;
+  }
+);
+
+export const removeLocalLog = createAsyncThunk('sleep/removeLocalLog', async (id: string, { dispatch }) => {
+  // Delete locally first so UI is instant
   await deleteLogDb(id);
+  // Best-effort cloud delete — swallow errors so offline still works
+  try {
+    await dispatch(sleepApi.endpoints.deleteLog.initiate(id)).unwrap();
+  } catch (e) {
+    console.warn('[removeLocalLog] Cloud delete failed (offline?). Log removed locally only.', e);
+  }
   return id;
 });
 
@@ -53,8 +77,15 @@ const sleepSlice = createSlice({
         state.logs = action.payload;
         state.isLoading = false;
       })
+      .addCase(syncFromCloud.fulfilled, (state, action) => {
+        state.logs = action.payload;
+        state.isLoading = false;
+      })
       .addCase(addLocalLog.fulfilled, (state, action) => {
         state.logs.unshift(action.payload);
+      })
+      .addCase(updateLocalLog.fulfilled, (state, action) => {
+        state.logs = state.logs.map(l => l.id === action.payload.id ? action.payload : l);
       })
       .addCase(removeLocalLog.fulfilled, (state, action) => {
         state.logs = state.logs.filter(l => l.id !== action.payload);

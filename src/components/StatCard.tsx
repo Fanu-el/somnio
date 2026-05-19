@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { MotiView } from 'moti';
+import { StyleSheet, View } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
+import { Card as PaperCard, Text as PaperText } from 'react-native-paper';
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -17,43 +17,36 @@ export const StatCard = ({ icon: Icon, label, value, delay = 0, accent }: StatCa
   const activeAccent = accent || colors.primary;
 
   return (
-    <MotiView
-      from={{ opacity: 0, scale: 0.85, translateY: 12 }}
-      animate={{ opacity: 1, scale: 1, translateY: 0 }}
-      transition={{ type: 'spring', delay, damping: 18, stiffness: 120 }}
-      style={[styles.card, { backgroundColor: colors.surface }]}
-    >
-      <View style={[styles.iconWrapper, { backgroundColor: activeAccent + '15' }]}>
-        <Icon size={22} color={activeAccent} />
-      </View>
-      <Text style={[styles.value, { color: activeAccent }]}>{value}</Text>
-      <Text style={[styles.label, { color: colors.onSurfaceVariant }]}>{label}</Text>
-    </MotiView>
+    <View style={{ flex: 1, marginHorizontal: 6 }}>
+      <PaperCard style={{ backgroundColor: colors.surface, borderRadius: 28 }} mode="elevated" elevation={2}>
+        <PaperCard.Content style={{ alignItems: 'center', paddingVertical: 22, paddingHorizontal: 12 }}>
+          <View style={[styles.iconWrapper, { backgroundColor: activeAccent + '15' }]}>
+            <Icon size={20} color={activeAccent} strokeWidth={2.5} />
+          </View>
+          <PaperText variant="titleLarge" style={[styles.value, { color: colors.onSurface }]}>{value}</PaperText>
+          <PaperText variant="labelMedium" style={[styles.label, { color: colors.onSurfaceVariant }]}>{label}</PaperText>
+        </PaperCard.Content>
+      </PaperCard>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    borderRadius: 24,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    marginHorizontal: 5,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  },
   iconWrapper: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  value: { fontWeight: '800', fontSize: 20, letterSpacing: -0.5 },
-  label: { marginTop: 4, textAlign: 'center', fontSize: 11, fontWeight: '600', letterSpacing: 0.3 },
+  value: {
+    fontWeight: '900',
+    marginBottom: 2,
+    letterSpacing: -0.5,
+  },
+  label: {
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
 });

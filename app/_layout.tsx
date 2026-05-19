@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { store, fetchLocalLogs, useAppDispatch, useAppSelector } from '../src/store';
+import { store, fetchLocalLogs, syncFromCloud, useAppDispatch, useAppSelector } from '../src/store';
 import { loadSettings } from '../src/store/settingsSlice';
 import { setUser, clearAuth } from '../src/store/authSlice';
 import { tokenStorage } from '../src/utils/tokenStorage';
@@ -70,6 +70,8 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
         if (result.data?.data?.user) {
           dispatch(setUser(result.data.data.user));
+          // Trigger cloud sync after auth success
+          dispatch(syncFromCloud());
         } else {
           dispatch(clearAuth());
         }
@@ -99,7 +101,7 @@ function ThemedApp() {
         <AuthGate>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="add" options={{ presentation: 'modal', title: 'Log Sleep' }} />
+            <Stack.Screen name="add" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
             <Stack.Screen name="register" options={{ headerShown: false }} />
             <Stack.Screen name="verify-email" options={{ headerShown: false }} />
@@ -116,11 +118,15 @@ function ThemedApp() {
 
 // ── Root ─────────────────────────────────────────────────────────────────────
 
+import { Provider as PaperProvider } from 'react-native-paper';
+
 export default function RootLayout() {
   return (
     <Provider store={store}>
       <SafeAreaProvider>
-        <ThemedApp />
+        <PaperProvider>
+          <ThemedApp />
+        </PaperProvider>
       </SafeAreaProvider>
     </Provider>
   );

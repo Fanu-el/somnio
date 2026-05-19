@@ -1,25 +1,20 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, Pressable, TextInput, Image, Alert } from 'react-native';
+import { ScrollView, View, Text, Pressable, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MotiView } from 'moti';
 import { useRouter } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 import { 
-  Sun, 
-  Moon, 
-  Settings as SettingsIcon, 
-  Key, 
-  LogOut, 
-  Trash2, 
-  User as UserIcon, 
-  Camera, 
-  ChevronRight, 
-  Info, 
-  Smartphone,
-  Pencil,
-  Globe,
-  Sparkles
+  Sun, Moon, Settings as SettingsIcon, Key, LogOut, Trash2, 
+  User as UserIcon, Camera, Info, Smartphone, Pencil, Globe, Sparkles 
 } from 'lucide-react-native';
+import { 
+  List, 
+  Divider as PaperDivider, 
+  Avatar, 
+  Button as PaperButton, 
+  TextInput as PaperInput, 
+  Card as PaperCard,
+  IconButton
+} from 'react-native-paper';
 
 import { useAppSelector, useAppDispatch } from '../../src/store';
 import { saveThemeMode, saveDefaultTimezone } from '../../src/store/settingsSlice';
@@ -52,7 +47,7 @@ export default function SettingsScreen() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, themeMode, isDark } = useTheme();
+  const { colors, themeMode } = useTheme();
   const { defaultTimezone } = useAppSelector((s: any) => s.settings);
   const authUser = useAppSelector((s: any) => s.auth.user);
 
@@ -67,6 +62,7 @@ export default function SettingsScreen() {
   const [editMode, setEditMode] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [showTzModal, setShowTzModal] = useState(false);
 
   const avatarUrl = user?.profilePictureFile
     ? `${FILE_PREVIEW_URL}${user.profilePictureFile.path}`
@@ -155,202 +151,249 @@ export default function SettingsScreen() {
     );
   };
 
-  const SectionLabel = ({ label }: { label: string }) => (
-    <Text style={{ marginHorizontal: 20, marginBottom: 12, letterSpacing: 1.2, fontSize: 11, fontWeight: '800', color: colors.primary }}>
-      {label}
-    </Text>
-  );
-
-  const Card = ({ children }: { children: React.ReactNode }) => (
-    <View style={{ marginHorizontal: 16, marginBottom: 28, borderRadius: 24, overflow: 'hidden', backgroundColor: colors.surface, elevation: 2, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10 }}>
-      {children}
-    </View>
-  );
-
-  const Divider = () => <View style={{ height: 1, backgroundColor: colors.surfaceVariant, marginLeft: 56 }} />;
-
-  const Row = ({ icon: Icon, label, value, onPress, danger = false }: any) => (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ 
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      paddingHorizontal: 16, 
-      paddingVertical: 16,
-      backgroundColor: pressed ? colors.surfaceVariant : 'transparent'
-    })}>
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: (danger ? colors.error : colors.primary) + '15', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-        <Icon size={20} color={danger ? colors.error : colors.primary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 16, fontWeight: '600', color: danger ? colors.error : colors.onSurface }}>{label}</Text>
-        {value ? <Text style={{ fontSize: 13, color: colors.onSurfaceVariant, marginTop: 2 }}>{value}</Text> : null}
-      </View>
-      <ChevronRight size={18} color={colors.outline} />
-    </Pressable>
-  );
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}>
 
-        {/* Profile hero */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', damping: 18 }}
-          style={{ alignItems: 'center', paddingVertical: 40, marginBottom: 24, backgroundColor: isDark ? colors.surface : colors.surfaceVariant }}
-        >
-          <Pressable onPress={handlePickImage} disabled={isUploading || !user} style={{ position: 'relative' }}>
-            <View style={{ padding: 4, borderRadius: 52, borderWidth: 2, borderColor: colors.primary }}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={{ width: 96, height: 96, borderRadius: 48 }} />
+        {/* Header */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, marginBottom: 16 }}>
+          <Text style={{ fontSize: 28, fontWeight: '900', color: colors.onSurface }}>Settings</Text>
+          <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4, fontWeight: '500' }}>
+            Manage your preferences and profile details
+          </Text>
+        </View>
+
+        {/* Profile card */}
+        <View>
+          <PaperCard style={{ marginHorizontal: 16, marginBottom: 28, backgroundColor: colors.surface }} mode="elevated" elevation={2}>
+            <PaperCard.Content style={{ alignItems: 'center', paddingVertical: 16 }}>
+              <Pressable onPress={handlePickImage} disabled={isUploading || !user} style={{ position: 'relative' }}>
+                {avatarUrl ? (
+                  <Avatar.Image size={96} source={{ uri: avatarUrl }} style={{ backgroundColor: colors.primary + '20' }} />
+                ) : (
+                  <Avatar.Icon size={96} icon={() => <UserIcon size={48} color={colors.primary} />} style={{ backgroundColor: colors.primary + '20' }} />
+                )}
+                <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: colors.primary, borderRadius: 16 }}>
+                  <IconButton icon={() => <Camera size={14} color="#fff" />} size={18} style={{ margin: 0 }} />
+                </View>
+                <Loader visible={isUploading} inline={false} message="Uploading..." />
+              </Pressable>
+
+              {editMode ? (
+                <View style={{ width: '100%', gap: 12, marginTop: 20 }}>
+                  <PaperInput
+                    mode="outlined"
+                    label="First name"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    outlineColor={colors.outline}
+                    activeOutlineColor={colors.primary}
+                    style={{ backgroundColor: colors.surface }}
+                  />
+                  <PaperInput
+                    mode="outlined"
+                    label="Last name"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    outlineColor={colors.outline}
+                    activeOutlineColor={colors.primary}
+                    style={{ backgroundColor: colors.surface }}
+                  />
+                  <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 8 }}>
+                    <PaperButton mode="text" onPress={() => setEditMode(false)} style={{ flex: 1 }} textColor={colors.onSurfaceVariant}>
+                      Cancel
+                    </PaperButton>
+                    <PaperButton mode="contained" onPress={handleSaveProfile} loading={isUpdating} disabled={isUpdating} style={{ flex: 1, backgroundColor: colors.primary }}>
+                      Save
+                    </PaperButton>
+                  </View>
+                </View>
               ) : (
-                <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
-                  <UserIcon size={48} color={colors.primary} />
+                <View style={{ alignItems: 'center', marginTop: 16 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '900', color: colors.onSurface }}>
+                    {user ? `${user.firstName} ${user.lastName}` : 'Dreamer'}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4, fontWeight: '500' }}>{user?.email ?? ''}</Text>
+                  {user && (
+                    <PaperButton mode="outlined" icon={() => <Pencil size={14} color={colors.primary} />} onPress={handleEditStart} style={{ marginTop: 16, borderColor: colors.primary }} textColor={colors.primary}>
+                      Edit Profile
+                    </PaperButton>
+                  )}
                 </View>
               )}
-            </View>
-            
-            <View style={{ position: 'absolute', bottom: 4, right: 4, backgroundColor: colors.primary, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: isDark ? colors.surface : colors.surfaceVariant }}>
-              <Camera size={14} color="#fff" />
-            </View>
-
-            <Loader visible={isUploading} inline={false} message="Uploading..." />
-          </Pressable>
-
-          {editMode ? (
-            <View style={{ width: '85%', gap: 10, marginTop: 20 }}>
-              <TextInput
-                value={firstName} onChangeText={setFirstName}
-                style={{ backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, color: colors.onSurface, fontSize: 16, borderWidth: 1, borderColor: colors.outline }}
-                placeholder="First name" placeholderTextColor={colors.onSurfaceVariant}
-              />
-              <TextInput
-                value={lastName} onChangeText={setLastName}
-                style={{ backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, color: colors.onSurface, fontSize: 16, borderWidth: 1, borderColor: colors.outline }}
-                placeholder="Last name" placeholderTextColor={colors.onSurfaceVariant}
-              />
-              <View style={{ flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 8 }}>
-                <Pressable onPress={() => setEditMode(false)} style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.surfaceVariant, alignItems: 'center' }}>
-                  <Text style={{ color: colors.onSurfaceVariant, fontWeight: '700' }}>Cancel</Text>
-                </Pressable>
-                <Pressable onPress={handleSaveProfile} disabled={isUpdating} style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center' }}>
-                  <Loader visible={isUpdating} inline size="small" color="#fff" />
-                  {!isUpdating && <Text style={{ color: '#fff', fontWeight: '700' }}>Save</Text>}
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <View style={{ alignItems: 'center', marginTop: 16 }}>
-              <Text style={{ fontSize: 24, fontWeight: '900', color: colors.onSurface }}>
-                {user ? `${user.firstName} ${user.lastName}` : 'Dreamer'}
-              </Text>
-              <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4, fontWeight: '500' }}>{user?.email ?? ''}</Text>
-              {user && (
-                <Pressable onPress={handleEditStart} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.primary + '15', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Pencil size={14} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '700' }}>Edit Profile</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-        </MotiView>
+            </PaperCard.Content>
+          </PaperCard>
+        </View>
 
         {/* Appearance */}
-        <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400, delay: 150 }}>
-          <SectionLabel label="APPEARANCE" />
-          <Card>
-            {THEME_OPTIONS.map((opt, i) => {
-              const isSelected = themeMode === opt.value;
-              const Icon = opt.icon;
-              return (
-                <React.Fragment key={opt.value}>
-                  <Pressable
-                    onPress={() => dispatch(saveThemeMode(opt.value))}
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, backgroundColor: isSelected ? colors.primary + '10' : 'transparent' }}
-                  >
-                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: (isSelected ? colors.primary : colors.outline) + '15', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                      <Icon size={20} color={isSelected ? colors.primary : colors.onSurfaceVariant} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: isSelected ? colors.primary : colors.onSurface }}>{opt.label}</Text>
-                      <Text style={{ fontSize: 13, color: colors.onSurfaceVariant, marginTop: 2 }}>{opt.desc}</Text>
-                    </View>
-                    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.outline, alignItems: 'center', justifyContent: 'center' }}>
-                      {isSelected && <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary }} />}
-                    </View>
-                  </Pressable>
-                  {i < THEME_OPTIONS.length - 1 && <Divider />}
-                </React.Fragment>
-              );
-            })}
-          </Card>
-        </MotiView>
+        <View>
+          <List.Section>
+            <List.Subheader style={{ color: colors.primary, fontWeight: '800', letterSpacing: 1.2 }}>APPEARANCE</List.Subheader>
+            <PaperCard style={{ marginHorizontal: 16, backgroundColor: colors.surface }} mode="elevated" elevation={1}>
+              {THEME_OPTIONS.map((opt, i) => {
+                const isSelected = themeMode === opt.value;
+                const Icon = opt.icon;
+                return (
+                  <React.Fragment key={opt.value}>
+                    <List.Item
+                      title={opt.label}
+                      description={opt.desc}
+                      onPress={() => dispatch(saveThemeMode(opt.value))}
+                      style={{ backgroundColor: isSelected ? colors.primary + '10' : 'transparent', borderRadius: 12 }}
+                      titleStyle={{ color: isSelected ? colors.primary : colors.onSurface, fontWeight: '600' }}
+                      descriptionStyle={{ color: colors.onSurfaceVariant }}
+                      left={props => <List.Icon {...props} icon={() => <Icon size={24} color={isSelected ? colors.primary : colors.onSurfaceVariant} />} />}
+                      right={props => isSelected ? <List.Icon {...props} icon={() => <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary, alignSelf: 'center', margin: 8}} />} /> : null}
+                    />
+                    {i < THEME_OPTIONS.length - 1 && <PaperDivider />}
+                  </React.Fragment>
+                );
+              })}
+            </PaperCard>
+          </List.Section>
+        </View>
 
         {/* Localization */}
-        <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400, delay: 200 }}>
-          <SectionLabel label="LOCALIZATION" />
-          <Card>
-            <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginRight: 14 }}>
-                  <Globe size={20} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.onSurface }}>Default Timezone</Text>
-                  <Text style={{ fontSize: 13, color: colors.onSurfaceVariant, marginTop: 2 }}>Used for new sleep logs</Text>
-                </View>
-              </View>
-              <View style={{ borderWidth: 1.5, borderColor: colors.outline, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.surfaceVariant + '30' }}>
-                <Picker
-                  selectedValue={defaultTimezone}
-                  onValueChange={(val) => dispatch(saveDefaultTimezone(val))}
-                  dropdownIconColor={colors.onSurface}
-                  style={{ color: colors.onSurface }}
-                >
-                  {UNIQUE_TIMEZONES.map(tz => (
-                    <Picker.Item key={tz} label={tz} value={tz} />
-                  ))}
-                </Picker>
-              </View>
-            </View>
-          </Card>
-        </MotiView>
+        <View>
+          <List.Section>
+            <List.Subheader style={{ color: colors.primary, fontWeight: '800', letterSpacing: 1.2 }}>LOCALIZATION</List.Subheader>
+            <PaperCard style={{ marginHorizontal: 16, backgroundColor: colors.surface }} mode="elevated" elevation={1}>
+              <List.Item
+                title="Default Timezone"
+                description={defaultTimezone}
+                onPress={() => setShowTzModal(true)}
+                titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                descriptionStyle={{ color: colors.onSurfaceVariant }}
+                left={props => <List.Icon {...props} icon={() => <Globe size={24} color={colors.primary} />} />}
+              />
+            </PaperCard>
+          </List.Section>
+        </View>
 
         {/* Account */}
-        {user && (
-          <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400, delay: 250 }}>
-            <SectionLabel label="ACCOUNT" />
-            <Card>
-              <Row icon={Key} label="Change Password" value="Reset via email" onPress={() => router.push('/forgot-password' as any)} />
-              <Divider />
-              <Row icon={LogOut} label="Sign Out" onPress={handleLogout} />
-              <Divider />
-              <Row icon={Trash2} label="Delete Account" danger onPress={handleDeleteAccount} />
-            </Card>
-          </MotiView>
-        )}
-
-        {!user && (
-          <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400, delay: 250 }}>
-            <SectionLabel label="ACCOUNT" />
-            <Card>
-              <Row icon={LogOut} label="Sign In" onPress={() => router.push('/login' as any)} />
-              <Divider />
-              <Row icon={Sparkles} label="Create Account" onPress={() => router.push('/register' as any)} />
-            </Card>
-          </MotiView>
-        )}
+        <View>
+          <List.Section>
+            <List.Subheader style={{ color: colors.primary, fontWeight: '800', letterSpacing: 1.2 }}>ACCOUNT</List.Subheader>
+            <PaperCard style={{ marginHorizontal: 16, backgroundColor: colors.surface }} mode="elevated" elevation={1}>
+              {user ? (
+                <>
+                  <List.Item
+                    title="Change Password"
+                    description="Reset via email"
+                    onPress={() => router.push('/forgot-password' as any)}
+                    titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                    descriptionStyle={{ color: colors.onSurfaceVariant }}
+                    left={props => <List.Icon {...props} icon={() => <Key size={24} color={colors.primary} />} />}
+                  />
+                  <PaperDivider />
+                  <List.Item
+                    title="Sign Out"
+                    onPress={handleLogout}
+                    titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                    left={props => <List.Icon {...props} icon={() => <LogOut size={24} color={colors.primary} />} />}
+                  />
+                  <PaperDivider />
+                  <List.Item
+                    title="Delete Account"
+                    onPress={handleDeleteAccount}
+                    titleStyle={{ color: colors.error, fontWeight: '600' }}
+                    left={props => <List.Icon {...props} icon={() => <Trash2 size={24} color={colors.error} />} />}
+                  />
+                </>
+              ) : (
+                <>
+                  <List.Item
+                    title="Sign In"
+                    onPress={() => router.push('/login' as any)}
+                    titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                    left={props => <List.Icon {...props} icon={() => <LogOut size={24} color={colors.primary} />} />}
+                  />
+                  <PaperDivider />
+                  <List.Item
+                    title="Create Account"
+                    onPress={() => router.push('/register' as any)}
+                    titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                    left={props => <List.Icon {...props} icon={() => <Sparkles size={24} color={colors.primary} />} />}
+                  />
+                </>
+              )}
+            </PaperCard>
+          </List.Section>
+        </View>
 
         {/* About */}
-        <MotiView from={{ opacity: 0, translateY: 16 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400, delay: 350 }}>
-          <SectionLabel label="ABOUT" />
-          <Card>
-            <Row icon={Info} label="Somnio" value="Mind & sleep health tracker" />
-            <Divider />
-            <Row icon={Smartphone} label="Version" value="1.0.0" />
-          </Card>
-        </MotiView>
+        <View>
+          <List.Section>
+            <List.Subheader style={{ color: colors.primary, fontWeight: '800', letterSpacing: 1.2 }}>ABOUT</List.Subheader>
+            <PaperCard style={{ marginHorizontal: 16, backgroundColor: colors.surface }} mode="elevated" elevation={1}>
+              <List.Item
+                title="Somnio"
+                description="Mind & sleep health tracker"
+                titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                descriptionStyle={{ color: colors.onSurfaceVariant }}
+                left={props => <List.Icon {...props} icon={() => <Info size={24} color={colors.primary} />} />}
+              />
+              <PaperDivider />
+              <List.Item
+                title="Version"
+                description="1.0.0"
+                titleStyle={{ color: colors.onSurface, fontWeight: '600' }}
+                descriptionStyle={{ color: colors.onSurfaceVariant }}
+                left={props => <List.Icon {...props} icon={() => <Smartphone size={24} color={colors.primary} />} />}
+              />
+            </PaperCard>
+          </List.Section>
+        </View>
 
       </ScrollView>
+
+      {/* Timezone Selection Modal */}
+      <Modal visible={showTzModal} transparent animationType="fade" onRequestClose={() => setShowTzModal(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View
+            style={{ width: '90%', maxHeight: '70%', backgroundColor: colors.surface, borderRadius: 28, padding: 24, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 5 }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: '900', color: colors.onSurface, marginBottom: 16 }}>Select Default Timezone</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginBottom: 20 }}>
+              {UNIQUE_TIMEZONES.map((tz) => {
+                const isSelected = defaultTimezone === tz;
+                return (
+                  <Pressable
+                    key={tz}
+                    onPress={() => {
+                      dispatch(saveDefaultTimezone(tz));
+                      setShowTzModal(false);
+                    }}
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 16,
+                      paddingHorizontal: 8,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.surfaceVariant,
+                      backgroundColor: pressed ? colors.surfaceVariant + '30' : 'transparent',
+                      borderRadius: 8
+                    })}
+                  >
+                    <Text style={{ flex: 1, fontSize: 16, color: isSelected ? colors.primary : colors.onSurface, fontWeight: isSelected ? '700' : '500' }}>
+                      {tz}
+                    </Text>
+                    {isSelected && (
+                      <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <PaperButton mode="contained" onPress={() => setShowTzModal(false)} style={{ backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 4 }}>
+              Close
+            </PaperButton>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
