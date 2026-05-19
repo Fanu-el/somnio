@@ -1,162 +1,252 @@
-import React, { useMemo } from 'react';
-import { ScrollView, View, Text } from 'react-native';
+import React from 'react';
+import { ScrollView, View, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MotiView } from 'moti';
-import { useColorScheme } from 'nativewind';
-import { useAppSelector } from '../../src/store';
-import { useSafeBottom } from '../../src/hooks/useSafeArea';
+import { 
+  BarChart3, 
+  PieChart, 
+  ClipboardList, 
+  Star, 
+  Moon, 
+  CloudLightning,
+  Sparkles,
+  Info,
+  TrendingUp,
+  Activity
+} from 'lucide-react-native';
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+import { useSafeBottom } from '../../src/hooks/useSafeArea';
+import { useTheme } from '../../src/hooks/useTheme';
+import { useGetReportsQuery } from '../../src/api/sleepApi';
+import { Skeleton } from '../../src/components/Skeleton';
+import { useAppSelector } from '../../src/store';
+import { Text as PaperText, Card as PaperCard, Button as PaperButton } from 'react-native-paper';
+import { WifiOff } from 'lucide-react-native';
 
 const qualityColor: Record<number, string> = {
   1: '#EF4444', 2: '#F97316', 3: '#EAB308', 4: '#22C55E', 5: '#8B5CF6',
 };
 
+const qualityEmoji = ['😫', '😕', '😐', '🙂', '🤩'];
+
 export default function ReportsScreen() {
   const safeBottom = useSafeBottom();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const { logs } = useAppSelector((s: any) => s.sleep);
+  const { colors } = useTheme();
+  const { isAuthenticated } = useAppSelector((s: any) => s.auth);
+  const { data, isLoading, isError, refetch, isFetching } = useGetReportsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+  
+  const stats = data?.data?.stats;
 
-  const totalLogs = logs.length;
-
-  const avgQuality = useMemo(() =>
-    totalLogs ? (logs.reduce((a: number, l: any) => a + l.quality, 0) / totalLogs).toFixed(1) : '–',
-  [logs, totalLogs]);
-
-  const avgDuration = useMemo(() => {
-    if (!totalLogs) return '–';
-    const ms = logs.reduce((a: number, l: any) =>
-      a + (new Date(l.wakeTime).getTime() - new Date(l.sleepTime).getTime()), 0
-    ) / totalLogs;
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor((ms % 3600000) / 60000);
-    return `${h}h ${m}m`;
-  }, [logs, totalLogs]);
-
-  const weekData = useMemo(() => {
-    const today = new Date();
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() - (6 - i));
-      const match = logs.find((l: any) => new Date(l.date).toDateString() === d.toDateString());
-      const durationHrs = match
-        ? (new Date(match.wakeTime).getTime() - new Date(match.sleepTime).getTime()) / 3600000
-        : 0;
-      return { day: DAYS[d.getDay()], hrs: durationHrs, quality: match?.quality ?? 0, isToday: i === 6 };
-    });
-  }, [logs]);
-
-  const maxHrs = Math.max(...weekData.map(d => d.hrs), 1);
-
-  const qualityDist = useMemo(() => {
-    const dist = [0, 0, 0, 0, 0, 0];
-    logs.forEach((l: any) => { dist[l.quality]++; });
-    return dist.slice(1);
-  }, [logs]);
-
-  const statItems = [
-    { label: 'Total Logs', value: String(totalLogs), icon: '📋', delay: 0 },
-    { label: 'Avg Quality', value: `${avgQuality}/5`, icon: '⭐', delay: 80 },
-    { label: 'Avg Duration', value: avgDuration, icon: '🌙', delay: 160 },
-  ];
-
-  const surfaceColor = isDark ? '#13102A' : '#FFFFFF';
-  const surfaceVariantColor = isDark ? '#1E1B40' : '#EDE9FE';
-  const onSurfaceColor = isDark ? '#E8E5FF' : '#1A1635';
-  const onSurfaceVariantColor = isDark ? '#C4BCFF' : '#4C4578';
-  const primaryColor = isDark ? '#9D8FFF' : '#5B4FE8';
-
-  return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-backgroundDark" edges={['left', 'right']}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: safeBottom + 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Stat cards */}
-        <View className="flex-row px-3 py-4 gap-2">
-          {statItems.map(s => (
-            <MotiView
-              key={s.label}
-              from={{ opacity: 0, translateY: 16 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: 'spring', delay: s.delay, damping: 18 }}
-              style={{ flex: 1, borderRadius: 20, paddingVertical: 16, paddingHorizontal: 8, alignItems: 'center', backgroundColor: surfaceVariantColor }}
-            >
-              <Text style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</Text>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: primaryColor }}>{s.value}</Text>
-              <Text style={{ fontSize: 11, color: onSurfaceVariantColor, textAlign: 'center', marginTop: 2 }}>{s.label}</Text>
-            </MotiView>
-          ))}
+  // Offline / error state
+  if (isError || (!isLoading && !stats && !isFetching)) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.surfaceVariant, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+            <WifiOff size={36} color={colors.outline} />
+          </View>
+          <PaperText variant="headlineSmall" style={{ fontWeight: '800', color: colors.onSurface, textAlign: 'center', marginBottom: 8 }}>
+            Insights unavailable
+          </PaperText>
+          <PaperText variant="bodyMedium" style={{ color: colors.onSurfaceVariant, textAlign: 'center', lineHeight: 22, marginBottom: 24 }}>
+            Reports are generated by the cloud. Check your connection and try again.
+          </PaperText>
+          <PaperButton mode="contained" onPress={refetch} loading={isFetching} style={{ backgroundColor: colors.primary, borderRadius: 12 }}>
+            Retry
+          </PaperButton>
         </View>
+      </SafeAreaView>
+    );
+  }
 
-        {/* Weekly bar chart */}
-        <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 500, delay: 250 }}
-          style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 20, backgroundColor: surfaceColor, padding: 20, elevation: 3 }}
-        >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: onSurfaceColor, marginBottom: 16 }}>
-            Weekly Sleep
-          </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 130 }}>
-            {weekData.map((d, i) => (
-              <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
-                <MotiView
-                  from={{ height: 0 }}
-                  animate={{ height: d.hrs ? Math.max((d.hrs / maxHrs) * 100, 6) : 4 }}
-                  transition={{ type: 'timing', duration: 700, delay: 300 + i * 80 }}
-                  style={{
-                    width: '60%',
-                    borderRadius: 6,
-                    backgroundColor: d.quality ? qualityColor[d.quality] : surfaceVariantColor,
-                    opacity: d.hrs ? 1 : 0.35,
-                  }}
-                />
-                <Text style={{ fontSize: 11, color: d.isToday ? primaryColor : onSurfaceVariantColor, marginTop: 4, fontWeight: d.isToday ? '700' : '400' }}>
-                  {d.day}
-                </Text>
-                {d.hrs > 0 && (
-                  <Text style={{ fontSize: 9, color: onSurfaceVariantColor }}>
-                    {d.hrs.toFixed(1)}h
-                  </Text>
-                )}
+  if (isLoading && !stats) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={{ paddingHorizontal: 20, paddingTop: 24, marginBottom: 20 }}>
+            <Skeleton width={120} height={32} radius={8} />
+            <Skeleton width={200} height={16} radius={4} style={{ marginTop: 8 }} />
+          </View>
+          
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16, marginBottom: 24 }}>
+            {[1, 2, 3, 4].map(i => (
+              <View key={i} style={{ width: '48.2%', backgroundColor: colors.surface, padding: 16, borderRadius: 24 }}>
+                <Skeleton width={36} height={36} radius={12} style={{ marginBottom: 12 }} />
+                <Skeleton width="70%" height={24} style={{ marginBottom: 4 }} />
+                <Skeleton width="40%" height={12} />
               </View>
             ))}
           </View>
-        </MotiView>
 
-        {/* Quality distribution */}
-        {totalLogs > 0 && (
-          <MotiView
-            from={{ opacity: 0, translateY: 20 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ type: 'timing', duration: 500, delay: 400 }}
-            style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 20, backgroundColor: surfaceColor, padding: 20, elevation: 3 }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: '700', color: onSurfaceColor, marginBottom: 16 }}>
-              Quality Distribution
-            </Text>
-            {qualityDist.map((count, i) => {
-              const pct = totalLogs ? count / totalLogs : 0;
-              return (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
-                  <Text style={{ fontSize: 18, width: 26 }}>{['😫', '😕', '😐', '🙂', '🤩'][i]}</Text>
-                  <View style={{ flex: 1, height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: surfaceVariantColor }}>
-                    <MotiView
-                      from={{ width: '0%' }}
-                      animate={{ width: `${pct * 100}%` } as any}
-                      transition={{ type: 'timing', duration: 700, delay: 500 + i * 60 }}
-                      style={{ height: '100%', borderRadius: 5, backgroundColor: Object.values(qualityColor)[i] }}
-                    />
+          <View style={{ marginHorizontal: 16, borderRadius: 24, backgroundColor: colors.surface, padding: 20 }}>
+            <Skeleton width={150} height={20} style={{ marginBottom: 20 }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140 }}>
+              {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                <Skeleton key={i} width={30} height={Math.random() * 100 + 20} radius={8} />
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  const statItems = [
+    { label: 'Total Logs', value: String(stats?.totalRecords ?? 0), icon: ClipboardList, color: colors.primary, delay: 0 },
+    { label: 'Avg Quality', value: `${stats?.averageQuality ?? 0}/5`, icon: Star, color: colors.tertiary, delay: 100 },
+    { label: 'Avg Duration', value: `${stats?.averageDurationHrs ?? 0}h`, icon: Moon, color: '#8B5CF6', delay: 200 },
+    { label: 'Streak', value: `${stats?.streak ?? 0}d`, icon: CloudLightning, color: '#FBBF24', delay: 300 },
+  ];
+
+  const maxHrs = Math.max(...(stats?.weeklyData?.map(d => d.hrs) ?? []), 1);
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: safeBottom + 32 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.primary} />
+        }
+      >
+        <View style={{ paddingHorizontal: 20, paddingTop: 24, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <PaperText variant="headlineMedium" style={{ fontWeight: '900', color: colors.onSurface }}>Insights</PaperText>
+            {/* <View
+              style={{ 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                gap: 5, 
+                backgroundColor: colors.primary + '15', 
+                paddingHorizontal: 10, 
+                paddingVertical: 5, 
+                borderRadius: 20 
+              }}
+            >
+              <Sparkles size={12} color={colors.primary} />
+              <PaperText variant="labelSmall" style={{ fontWeight: '800', color: colors.primary, letterSpacing: 0.5 }}>API POWERED</PaperText>
+            </View> */}
+          </View>
+          <PaperText variant="labelLarge" style={{ color: colors.onSurfaceVariant, marginTop: 4 }}>
+            Detailed analysis of your sleep patterns
+          </PaperText>
+        </View>
+
+        <View
+          style={{ 
+            marginHorizontal: 16, 
+            marginBottom: 24, 
+            padding: 12, 
+            borderRadius: 16, 
+            backgroundColor: colors.surfaceVariant, 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            gap: 10 
+          }}
+        >
+          <Info size={16} color={colors.primary} />
+          <PaperText variant="bodySmall" style={{ flex: 1, color: colors.onSurfaceVariant, fontWeight: '500' }}>
+            Reports are generated by our secure cloud engine for maximum accuracy.
+          </PaperText>
+        </View>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 16, marginBottom: 24 }}>
+          {statItems.map((s, i) => (
+            <View
+              key={s.label}
+              style={{ width: '48.2%' }}
+            >
+              <PaperCard style={{ backgroundColor: colors.surface, borderRadius: 24 }} mode="elevated" elevation={2}>
+                <PaperCard.Content style={{ padding: 16 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: s.color + '15', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                    <s.icon size={18} color={s.color} />
                   </View>
-                  <Text style={{ width: 28, fontSize: 12, color: onSurfaceVariantColor, textAlign: 'right' }}>{count}</Text>
+                  <PaperText variant="headlineMedium" style={{ fontWeight: '900', color: colors.onSurface }}>{s.value}</PaperText>
+                  <PaperText variant="labelSmall" style={{ color: colors.onSurfaceVariant, fontWeight: '600', marginTop: 2 }}>{s.label}</PaperText>
+                </PaperCard.Content>
+              </PaperCard>
+            </View>
+          ))}
+        </View>
+
+        <View
+          style={{ marginHorizontal: 16, marginBottom: 20 }}
+        >
+          <PaperCard style={{ backgroundColor: colors.surface, borderRadius: 24 }} mode="elevated" elevation={2}>
+            <PaperCard.Content style={{ padding: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <BarChart3 size={18} color={colors.primary} />
+                  <PaperText variant="titleMedium" style={{ fontWeight: '800', color: colors.onSurface }}>Weekly Sleep</PaperText>
                 </View>
-              );
-            })}
-          </MotiView>
+                <Activity size={16} color={colors.onSurfaceVariant} />
+              </View>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 140 }}>
+                {stats?.weeklyData?.map((d, i) => (
+                  <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <View
+                      style={{
+                        width: '55%',
+                        borderRadius: 8,
+                        backgroundColor: d.quality ? qualityColor[d.quality] : colors.surfaceVariant,
+                        opacity: d.hrs ? 1 : 0.3,
+                        height: d.hrs ? Math.max((d.hrs / maxHrs) * 110, 8) : 6,
+                      }}
+                    />
+                    <PaperText variant="labelSmall" style={{ color: d.isToday ? colors.primary : colors.onSurfaceVariant, marginTop: 8, fontWeight: d.isToday ? '800' : '600' }}>
+                      {d.day}
+                    </PaperText>
+                  </View>
+                ))}
+              </View>
+            </PaperCard.Content>
+          </PaperCard>
+        </View>
+
+        {stats && stats.totalRecords > 0 && (
+          <View
+            style={{ marginHorizontal: 16, marginBottom: 16 }}
+          >
+            <PaperCard style={{ backgroundColor: colors.surface, borderRadius: 24 }} mode="elevated" elevation={2}>
+              <PaperCard.Content style={{ padding: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                  <PieChart size={18} color={colors.tertiary} />
+                  <PaperText variant="titleMedium" style={{ fontWeight: '800', color: colors.onSurface }}>Quality Balance</PaperText>
+                </View>
+
+                {stats.qualityDistribution.map((count, i) => {
+                  const pct = stats.totalRecords ? count / stats.totalRecords : 0;
+                  return (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+                      <PaperText variant="titleLarge" style={{ width: 24 }}>{qualityEmoji[i]}</PaperText>
+                      <View style={{ flex: 1, height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.surfaceVariant }}>
+                        <View
+                          style={{ height: '100%', borderRadius: 5, backgroundColor: Object.values(qualityColor)[i], width: `${pct * 100}%` }}
+                        />
+                      </View>
+                      <PaperText variant="labelMedium" style={{ width: 30, color: colors.onSurface, fontWeight: '700', textAlign: 'right' }}>
+                        {Math.round(pct * 100)}%
+                      </PaperText>
+                    </View>
+                  );
+                })}
+              </PaperCard.Content>
+            </PaperCard>
+          </View>
         )}
+
+        <View
+          style={{ marginHorizontal: 16, padding: 20, borderRadius: 24, backgroundColor: colors.primary + '10', borderStyle: 'dashed', borderWidth: 2, borderColor: colors.primary + '30', alignItems: 'center' }}
+        >
+          <TrendingUp size={24} color={colors.primary} style={{ marginBottom: 10 }} />
+          <PaperText variant="titleSmall" style={{ fontWeight: '700', color: colors.primary }}>Deep Sleep Insights Coming Soon</PaperText>
+          <PaperText variant="bodySmall" style={{ color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 4 }}>
+            Our AI is learning from your data to provide personalized sleep health predictions.
+          </PaperText>
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );

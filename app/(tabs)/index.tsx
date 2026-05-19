@@ -1,14 +1,13 @@
 import React, { useMemo } from 'react';
-import { ScrollView, View, Text, Pressable } from 'react-native';
+import { ScrollView, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { MotiView } from 'moti';
+import dayjs from 'dayjs';
 import { 
   Sun, 
   Moon, 
   Sunrise, 
   Sunset, 
-  Sparkles, 
   Zap, 
   TrendingUp, 
   Plus, 
@@ -23,11 +22,14 @@ import { useSafeBottom } from '../../src/hooks/useSafeArea';
 import { dateUtils } from '../../src/utils/date';
 import { useTheme } from '../../src/hooks/useTheme';
 
+import { Skeleton, SkeletonCard } from '../../src/components/Skeleton';
+import { Button as PaperButton, Text as PaperText } from 'react-native-paper';
+
 export default function HomeScreen() {
   const router = useRouter();
   const safeBottom = useSafeBottom();
   const { colors } = useTheme();
-  const { logs } = useAppSelector((s: any) => s.sleep);
+  const { logs, isLoading } = useAppSelector((s: any) => s.sleep);
 
   const recentLogs = logs.slice(0, 3);
   const lastLog = logs[0] ?? null;
@@ -40,7 +42,7 @@ export default function HomeScreen() {
       case 'evening':   return Sunset;
       case 'night':     return Moon;
       case 'late':      return CloudMoon;
-      default:          return Sparkles;
+      default:          return Moon;
     }
   }, [greeting.type]);
 
@@ -58,30 +60,63 @@ export default function HomeScreen() {
 
   const streak = useMemo(() => dateUtils.calculateStreak(logs), [logs]);
 
+  const hasLoggedToday = useMemo(() => {
+    if (!lastLog) return false;
+    const tz = lastLog.timezone || 'UTC';
+    return dayjs(lastLog.date).tz(tz).isSame(dayjs().tz(tz), 'day');
+  }, [lastLog]);
+
+  if (isLoading && logs.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 20, marginBottom: 24 }}>
+          <Skeleton width={180} height={32} radius={8} />
+          <Skeleton width={140} height={16} radius={4} style={{ marginTop: 8 }} />
+        </View>
+        <View style={{ paddingHorizontal: 20, marginBottom: 32 }}>
+          <Skeleton width="100%" height={160} radius={24} />
+        </View>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 15, marginBottom: 32 }}>
+          <Skeleton width="30%" height={100} radius={20} style={{ marginHorizontal: 5 }} />
+          <Skeleton width="30%" height={100} radius={20} style={{ marginHorizontal: 5 }} />
+          <Skeleton width="30%" height={100} radius={20} style={{ marginHorizontal: 5 }} />
+        </View>
+        <View style={{ paddingHorizontal: 20 }}>
+          <Skeleton width={120} height={20} style={{ marginBottom: 16 }} />
+          <SkeletonCard height={60} hasIcon={false} />
+          <SkeletonCard height={60} hasIcon={false} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={{ paddingBottom: safeBottom + 32 }}>
         
         {/* Header */}
-        <MotiView
-          from={{ opacity: 0, translateY: -20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 500 }}
+        <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, marginBottom: 24 }}
         >
           <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <GreetingIcon size={24} color={colors.primary} />
-              <Text style={{ fontSize: 28, fontWeight: '900', color: colors.onSurface }}>{greeting.text}</Text>
+              <PaperText variant="headlineMedium" style={{ fontWeight: '900', color: colors.onSurface }}>{greeting.text}</PaperText>
             </View>
-            <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 4, fontWeight: '600' }}>
+            <PaperText variant="labelLarge" style={{ color: colors.onSurfaceVariant, marginTop: 4, fontWeight: '600' }}>
               {dateUtils.formatFullDate()}
-            </Text>
+            </PaperText>
           </View>
-        </MotiView>
+        </View>
 
         {/* Hero card */}
-        <SleepSummaryCard log={lastLog} />
+        <Pressable
+          onPress={() => lastLog && router.push({ pathname: '/add', params: { id: lastLog.id } } as any)}
+          disabled={!lastLog}
+          style={({ pressed }) => ({ opacity: pressed ? 0.95 : 1 })}
+        >
+          <SleepSummaryCard log={lastLog} />
+        </Pressable>
 
         {/* Stats row */}
         <View style={{ flexDirection: 'row', paddingHorizontal: 15, marginBottom: 32 }}>
@@ -92,56 +127,54 @@ export default function HomeScreen() {
 
         {/* Recent dreams section */}
         {recentLogs.length > 0 && (
-          <MotiView
-            from={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: 'timing', duration: 400, delay: 350 }}
+          <View
             style={{ paddingHorizontal: 20 }}
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ flex: 1, fontSize: 20, fontWeight: '800', color: colors.onSurface }}>
+              <PaperText variant="titleLarge" style={{ flex: 1, fontWeight: '800', color: colors.onSurface }}>
                 Recent Dreams
-              </Text>
-              <Pressable onPress={() => router.push('/(tabs)/logs' as any)}>
-                <Text style={{ color: colors.primary, fontWeight: '700' }}>See all</Text>
-              </Pressable>
+              </PaperText>
+              <PaperButton mode="text" onPress={() => router.push('/(tabs)/logs' as any)} textColor={colors.primary} compact>
+                See all
+              </PaperButton>
             </View>
             {recentLogs.map((log: any, i: number) => (
-              <LogCard key={log.id} log={log} onDelete={() => {}} index={i} compact />
+              <LogCard 
+                key={log.id} 
+                log={log} 
+                onDelete={() => {}} 
+                index={i} 
+                compact 
+                onPress={() => router.push({ pathname: '/add', params: { id: log.id } } as any)}
+              />
             ))}
-          </MotiView>
+          </View>
         )}
 
         {/* CTA */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', delay: 400, damping: 15 }}
+        <View
           style={{ marginHorizontal: 20, marginTop: 24 }}
         >
-          <Pressable
-            onPress={() => router.push('/add' as any)}
-            style={{ 
-              backgroundColor: colors.primary, 
-              borderRadius: 20, 
-              paddingVertical: 18, 
-              flexDirection: 'row', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: 10,
-              elevation: 4,
-              shadowColor: colors.primary,
-              shadowOpacity: 0.3,
-              shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 }
+          <PaperButton
+            mode="contained"
+            icon={() => <Plus size={20} color="#fff" strokeWidth={3} />}
+            onPress={() => {
+              if (hasLoggedToday && lastLog) {
+                router.push({ pathname: '/add', params: { id: lastLog.id } } as any);
+              } else {
+                router.push('/add' as any);
+              }
             }}
+            style={{ 
+              backgroundColor: hasLoggedToday ? colors.secondary : colors.primary, 
+              borderRadius: 20, 
+              paddingVertical: 8, 
+            }}
+            labelStyle={{ color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 }}
           >
-            <Plus size={20} color="#fff" strokeWidth={3} />
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 }}>
-              Log Tonight&apos;s Sleep
-            </Text>
-          </Pressable>
-        </MotiView>
+            {hasLoggedToday ? "Update Tonight's Sleep" : "Log Tonight's Sleep"}
+          </PaperButton>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

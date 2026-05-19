@@ -4,7 +4,7 @@ import { useAppSelector } from '../store';
 
 export const useTheme = () => {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const systemScheme = useNativeColorScheme();
+  const systemScheme = useNativeColorScheme() ?? 'light';
   const themeMode = useAppSelector((s) => s.settings.themeMode);
   
   const resolved = themeMode === 'system' ? systemScheme : themeMode;

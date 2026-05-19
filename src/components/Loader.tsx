@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet, Modal, Text } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
-import { MotiView } from 'moti';
 
 interface Props {
   visible?: boolean;
@@ -23,10 +22,7 @@ export const Loader = ({ visible = true, inline = false, message, size = 'large'
 
   const content = (
     <View style={[styles.container, !inline && styles.fullScreen, { backgroundColor: inline ? 'transparent' : 'rgba(0,0,0,0.4)' }]}>
-      <MotiView
-        from={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', damping: 12 }}
+      <View
         style={[styles.card, { backgroundColor: colors.surface }]}
       >
         <ActivityIndicator size="large" color={activeColor} />
@@ -35,7 +31,7 @@ export const Loader = ({ visible = true, inline = false, message, size = 'large'
             {message}
           </Text>
         )}
-      </MotiView>
+      </View>
     </View>
   );
 

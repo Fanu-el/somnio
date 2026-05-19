@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView } from 'react-native';
+import { View, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useForgotPasswordMutation } from '../src/api/authApi';
 import { useTheme } from '../src/hooks/useTheme';
 import { notify } from '../src/utils/notifications';
-import { Loader } from '../src/components/Loader';
+import { Text as PaperText, TextInput as PaperInput, Button as PaperButton, Card as PaperCard } from 'react-native-paper';
+import { ArrowLeft } from 'lucide-react-native';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -26,41 +27,62 @@ export default function ForgotPasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
-        <Pressable onPress={() => router.back()} style={{ marginBottom: 24 }}>
-          <Text style={{ color: colors.primary, fontSize: 15, fontWeight: '600' }}>← Back</Text>
-        </Pressable>
+        <PaperButton 
+          mode="text" 
+          icon={() => <ArrowLeft size={18} color={colors.primary} />} 
+          onPress={() => router.back()} 
+          style={{ alignSelf: 'flex-start', marginBottom: 24 }}
+          textColor={colors.primary}
+        >
+          Back
+        </PaperButton>
 
         <View style={{ alignItems: 'center', marginBottom: 28 }}>
-          <Text style={{ fontSize: 44 }}>🔑</Text>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: colors.onSurface, marginTop: 10 }}>Reset Password</Text>
-          <Text style={{ fontSize: 14, color: colors.onSurfaceVariant, marginTop: 6, textAlign: 'center' }}>
+          <PaperText variant="displaySmall">🔑</PaperText>
+          <PaperText variant="headlineSmall" style={{ fontWeight: '800', color: colors.onSurface, marginTop: 10 }}>Reset Password</PaperText>
+          <PaperText variant="bodyMedium" style={{ color: colors.onSurfaceVariant, marginTop: 6, textAlign: 'center' }}>
             Enter your email and we&apos;ll send you a reset code.
-          </Text>
+          </PaperText>
         </View>
 
-        <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 24, elevation: 4 }}>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.onSurfaceVariant, letterSpacing: 0.5, marginBottom: 6 }}>EMAIL</Text>
-          <TextInput
-            style={{ borderWidth: 1.5, borderColor: colors.outline, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, color: colors.onSurface, backgroundColor: colors.background, fontSize: 15 }}
-            value={email} onChangeText={setEmail}
-            keyboardType="email-address" autoCapitalize="none"
-            placeholder="you@example.com" placeholderTextColor={colors.onSurfaceVariant}
-          />
+        <PaperCard style={{ backgroundColor: colors.surface }} mode="elevated" elevation={2}>
+          <PaperCard.Content style={{ gap: 12 }}>
+            <PaperInput
+              mode="outlined"
+              label="Email"
+              style={{ backgroundColor: colors.surface }}
+              outlineColor={colors.outline}
+              activeOutlineColor={colors.primary}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="you@example.com"
+            />
 
-          <Pressable
-            onPress={handleSubmit} disabled={isLoading}
-            style={{ backgroundColor: isLoading ? colors.outline : colors.primary, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 16 }}
-          >
-            <Loader visible={isLoading} inline size="small" color="#fff" />
-            {!isLoading && <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Send Reset Code</Text>}
-          </Pressable>
+            <PaperButton
+              mode="contained"
+              onPress={handleSubmit}
+              loading={isLoading}
+              disabled={isLoading}
+              style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 4 }}
+              labelStyle={{ fontSize: 16, fontWeight: '800' }}
+            >
+              Send Reset Code
+            </PaperButton>
 
-          {isSuccess ? (
-            <Pressable onPress={() => router.push('/reset-password' as any)} style={{ marginTop: 14, alignItems: 'center' }}>
-              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>Enter reset code →</Text>
-            </Pressable>
-          ) : null}
-        </View>
+            {isSuccess && (
+              <PaperButton 
+                mode="text" 
+                onPress={() => router.push('/reset-password' as any)} 
+                textColor={colors.primary}
+                style={{ marginTop: 4 }}
+              >
+                Enter reset code →
+              </PaperButton>
+            )}
+          </PaperCard.Content>
+        </PaperCard>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

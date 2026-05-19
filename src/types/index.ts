@@ -15,6 +15,13 @@ export interface SleepStats {
   averageDurationHrs: number;
   totalRecords: number;
   streak: number;
+  qualityDistribution: number[];
+  weeklyData: {
+    day: string;
+    hrs: number;
+    quality: number;
+    isToday: boolean;
+  }[];
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';
